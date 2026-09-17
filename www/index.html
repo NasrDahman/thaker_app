@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تطبيق ذاكر</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <style>
+        :root {
+            --primary-blue: #1b4f72;
+            --secondary-blue: #2980b9;
+            --accent-blue: #3498db;
+            --bg-gradient: linear-gradient(135deg, #1b4f72 0%, #2980b9 100%);
+            --bg-light: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+            --border-color: #dee2e6;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --bg-light: #090d16;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9 !important;
+            --text-muted: #cbd5e1 !important;
+            --border-color: #334155;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            padding-bottom: 90px;
+            margin: 0;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .app-header {
+            background: var(--bg-gradient);
+            color: white;
+            padding: 15px 20px 20px 20px;
+            border-bottom-left-radius: 25px;
+            border-bottom-right-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .floating-nav {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 5px;
+            border: 1px solid var(--border-color);
+            z-index: 1000;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        body.keyboard-open .floating-nav {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+        }
+
+        .nav-link-item {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-decoration: none;
+            flex: 1;
+            cursor: pointer;
+            border-radius: 12px;
+            padding: 4px 0;
+        }
+
+        .nav-link-item i {
+            font-size: 18px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .nav-link-item.active {
+            color: var(--accent-blue);
+            background: rgba(52, 152, 219, 0.15);
+            font-weight: 600;
+        }
+
+        .page-section {
+            display: none;
+            padding: 15px;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        #ai-page.page-section.active {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px);
+            padding: 10px 15px;
+            box-sizing: border-box;
+        }
+
+        body.keyboard-open #ai-page.page-section.active {
+            height: calc(100vh - 20px);
+            padding-bottom: 5px;
+        }
+
+        .modern-card {
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .days-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            scrollbar-width: none;
+        }
+        .days-scroll::-webkit-scrollbar { display: none; }
+
+        .day-tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .day-tab-btn.active {
+            background: var(--secondary-blue);
+            color: white;
+            border-color: var(--secondary-blue);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            background: var(--card-bg);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .chat-bubble {
+            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-break: break-word;
+            white-space: pre-wrap; /* للحفاظ على تنسيق الأسطر والنصوص العادية */
+        }
+
+        .chat-bubble.ai {
+            background: #e2e8f0;
+            color: #0f172a;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            text-align: right;
+        }
+
+        [data-theme="dark"] .chat-bubble.ai {
+            background: #334155;
+            color: #f8fafc;
+        }
+
+        .chat-bubble.user {
+            background: var(--secondary-blue);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+            text-align: right;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 8px;
+            background: var(--bg-light);
+            padding: 6px 10px;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            margin-top: 8px;
+        }
+
+        .form-control, .input-group-text, .table {
+            background-color: var(--card-bg) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        .table th, .table td {
+            color: var(--text-main) !important;
+            background-color: var(--card-bg) !important;
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+    <!-- الهيدر -->
+    <div class="app-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <div class="bg-white bg-opacity-25 rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                    <i class="fa fa-book fs-6 text-white"></i>
+                </div>
+                <span class="fw-bold fs-5 text-white">ذاكر</span>
+            </div>
+            <div class="text-center">
+                <h6 class="mb-0 fw-bold" id="header-title">الرئيسية</h6>
+            </div>
+            <div>
+                <span class="badge bg-white text-primary px-3 py-1 rounded-pill small fw-bold shadow-sm" id="current-day-badge">اليوم</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. واجهة الرئيسية -->
+    <div id="home-page" class="page-section active">
+        <div class="modern-card border-start border-primary border-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-primary"><i class="fa fa-book me-2"></i>محاضرات اليوم</h6>
+                <span class="badge bg-primary bg-opacity-10 text-primary small" id="lectures-count">0 محاضرات</span>
+            </div>
+            <div id="today-lectures-container">
+                <p class="text-muted small mb-0">جارٍ تحميل الجدول...</p>
+            </div>
+        </div>
+
+        <div class="modern-card border-start border-success border-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-success"><i class="fa fa-tasks me-2"></i>مهام اليوم</h6>
+                <button class="btn btn-sm btn-outline-success rounded-pill py-0 px-2" onclick="openAddTaskModal()">+ إضافة مهمة</button>
+            </div>
+            <div id="daily-tasks-container">
+                <p class="text-muted small mb-0">لا توجد مهام مضافة اليوم.</p>
+            </div>
+        </div>
+
+        <div class="modern-card border-start border-danger border-4">
+            <h6 class="fw-bold text-danger mb-3"><i class="fa fa-clock-o me-2"></i>المهام المؤجلة</h6>
+            <div id="postponed-tasks-container">
+                <p class="text-muted small mb-0">لا توجد مهام مؤجلة حالياً.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. واجهة جدولي -->
+    <div id="schedule-page" class="page-section">
+        <div class="modern-card mb-3">
+            <h6 class="fw-bold text-primary mb-3"><i class="fa fa-cog me-2"></i>الإعداد السريع للجدول</h6>
+            <div class="input-group input-group-sm mb-2">
+                <span class="input-group-text">الحد الأقص للمحاضرات</span>
+                <input type="number" id="max-lectures-input" class="form-control" min="1" max="8" value="4">
+                <button class="btn btn-primary px-3" onclick="saveMaxLectures()">تحديث</button>
+            </div>
+        </div>
+
+        <div class="modern-card mb-3">
+            <h6 class="fw-bold mb-2"><i class="fa fa-calendar-check-o me-2 text-primary"></i>الجدول الأسبوعي الشامل</h6>
+            <div id="overview-schedule-container" class="small"></div>
+        </div>
+
+        <div class="days-scroll" id="days-tabs-container"></div>
+        <div id="day-editor-container"></div>
+    </div>
+
+    <!-- 3. واجهة الذكاء الاصطناعي -->
+    <div id="ai-page" class="page-section">
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                <div class="chat-bubble ai">
+                    مرحباً بك! أنا مساعدك الآلي في تطبيق ذاكر. كيف يمكنني مساعدتك في دراستك اليوم؟
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="ai-user-input" class="form-control border-0 bg-transparent shadow-none" placeholder="اكتب سؤالك الأكاديمي هنا..." onkeypress="handleKeyPress(event)" onfocus="document.body.classList.add('keyboard-open')" onblur="document.body.classList.remove('keyboard-open')">
+                <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;" onclick="sendAiMessage()">
+                    <i class="fa fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. واجهة الإعدادات -->
+    <div id="settings-page" class="page-section">
+        <div class="modern-card">
+            <h6 class="fw-bold text-primary mb-3"><i class="fa fa-bell me-2"></i>وقت الإشعار اليومي</h6>
+            <p class="text-muted small">حدد وقت استلام تقرير المهام (افتراضياً 10:00 مساءً):</p>
+            <input type="time" id="notification-time" class="form-control mb-3" value="22:00" onchange="saveNotificationTime()">
+
+            <h6 class="fw-bold text-primary mb-3 mt-4"><i class="fa fa-moon-o me-2"></i>مظهر التطبيق</h6>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="darkModeSwitch" onchange="toggleDarkMode()">
+                <label class="form-check-label small" for="darkModeSwitch">تفعيل الوضع الداكن</label>
+            </div>
+
+            <hr class="my-4">
+            <div class="text-center">
+                <p class="small text-muted mb-1">تطبيق <strong>ذاكر</strong> - الإصدار 1.0</p>
+                <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">المطور: نصرالله دهمان</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- شريط التنقل السفلي العائم -->
+    <nav class="floating-nav">
+        <div class="nav-link-item active" onclick="switchTab('home', this)">
+            <i class="fa fa-home"></i> الرئيسية
+        </div>
+        <div class="nav-link-item" onclick="switchTab('schedule', this)">
+            <i class="fa fa-calendar"></i> جدولي
+        </div>
+        <div class="nav-link-item" onclick="switchTab('ai', this)">
+            <i class="fa fa-robot"></i> AI
+        </div>
+        <div class="nav-link-item" onclick="switchTab('settings', this)">
+            <i class="fa fa-cog"></i> الإعدادات
+        </div>
+    </nav>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script>
+        const daysOfWeek = [
+            { id: 'sat', name: 'السبت' },
+            { id: 'sun', name: 'الأحد' },
+            { id: 'mon', name: 'الإثنين' },
+            { id: 'tue', name: 'الثلاثاء' },
+            { id: 'wed', name: 'الأربعاء' },
+            { id: 'thu', name: 'الخميس' },
+            { id: 'fri', name: 'الجمعة (المراجعة)' }
+        ];
+
+        let activeDayId = 'sat';
+        const GEMINI_TOKEN = "YOUR_API_KEY_HERE";
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link-item').forEach(i => i.classList.remove('active'));
+            
+            document.getElementById(tabId + '-page').classList.add('active');
+            element.classList.add('active');
+
+            const titles = { 
+                'home': 'الرئيسية', 
+                'schedule': 'جدولي الأسبوعي', 
+                'ai': 'المساعد الذكي', 
+                'settings': 'الإعدادات' 
+            };
+            document.getElementById('header-title').innerText = titles[tabId];
+            
+            if(tabId === 'home') loadHomeData();
+            if(tabId === 'schedule') renderScheduleInterface();
+        }
+
+        function saveMaxLectures() {
+            const max = document.getElementById('max-lectures-input').value;
+            localStorage.setItem('max_lectures', max);
+            renderScheduleInterface();
+            alert('تم تحديث الحد الأقصى للمحاضرات بنجاح.');
+        }
+
+        function renderScheduleInterface() {
+            const max = localStorage.getItem('max_lectures') || 4;
+            document.getElementById('max-lectures-input').value = max;
+            
+            let overviewHtml = '<div class="table-responsive"><table class="table table-sm table-bordered text-center mb-0"><thead><tr class="table-primary"><th>اليوم</th><th>المقررات</th></tr></thead><tbody>';
+            daysOfWeek.forEach(day => {
+                let dayLecs = [];
+                for(let i=1; i<=max; i++) {
+                    const l = localStorage.getItem(`lecture_${day.id}_${i}`);
+                    if(l) dayLecs.push(l);
+                }
+                overviewHtml += `<tr><td class="fw-bold" style="width: 30%;">${day.name}</td><td class="text-start px-2">${dayLecs.length ? dayLecs.join(' - ') : '<span class="text-muted small">فارغ</span>'}</td></tr>`;
+            });
+            overviewHtml += '</tbody></table></div>';
+            document.getElementById('overview-schedule-container').innerHTML = overviewHtml;
+
+            let tabsHtml = '';
+            daysOfWeek.forEach(day => {
+                const isActive = day.id === activeDayId ? 'active' : '';
+                tabsHtml += `<button class="day-tab-btn ${isActive}" onclick="setActiveDay('${day.id}')">${day.name}</button>`;
+            });
+            document.getElementById('days-tabs-container').innerHTML = tabsHtml;
+
+            let editorHtml = `<div class="modern-card"><h6 class="fw-bold text-primary mb-3">تعديل محاضرات يوم: ${daysOfWeek.find(d => d.id === activeDayId).name}</h6>`;
+            for(let i = 1; i <= max; i++) {
+                const val = localStorage.getItem(`lecture_${activeDayId}_${i}`) || '';
+                editorHtml += `<div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text">محاضرة ${i}</span>
+                    <input type="text" class="form-control" id="lec_${activeDayId}_${i}" value="${val}" placeholder="اسم المقرر">
+                </div>`;
+            }
+            editorHtml += `<button class="btn btn-primary btn-sm w-100 mt-3" onclick="saveDayLectures('${activeDayId}', ${max})"><i class="fa fa-save me-1"></i> حفظ جدول يوم ${daysOfWeek.find(d => d.id === activeDayId).name}</button></div>`;
+            document.getElementById('day-editor-container').innerHTML = editorHtml;
+        }
+
+        function setActiveDay(dayId) {
+            activeDayId = dayId;
+            renderScheduleInterface();
+        }
+
+        function saveDayLectures(dayId, max) {
+            for(let i = 1; i <= max; i++) {
+                const val = document.getElementById(`lec_${dayId}_${i}`).value;
+                localStorage.setItem(`lecture_${dayId}_${i}`, val);
+            }
+            renderScheduleInterface();
+            alert('تم حفظ جدول هذا اليوم بنجاح.');
+        }
+
+        function loadHomeData() {
+            const todayIndex = new Date().getDay();
+            const mapDays = { 6: 'sat', 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri' };
+            const currentDayId = mapDays[todayIndex] || 'sat';
+            const currentDayObj = daysOfWeek.find(d => d.id === currentDayId);
+            
+            document.getElementById('current-day-badge').innerText = currentDayObj ? currentDayObj.name : 'اليوم';
+
+            const max = localStorage.getItem('max_lectures') || 4;
+            let lecHtml = '';
+            let count = 0;
+            for(let i = 1; i <= max; i++) {
+                const course = localStorage.getItem(`lecture_${currentDayId}_${i}`);
+                if(course) {
+                    count++;
+                    lecHtml += `<div class="p-2 mb-2 rounded small border-start border-primary border-3 d-flex justify-content-between align-items-center" style="background: rgba(41, 128, 185, 0.08);"><span>محاضرة ${i}: <strong>${course}</strong></span><span class="badge bg-primary bg-opacity-10 text-primary">نشط</span></div>`;
+                }
+            }
+            document.getElementById('lectures-count').innerText = `${count} محاضرات`;
+            document.getElementById('today-lectures-container').innerHTML = lecHtml || '<p class="text-muted small mb-0">لا توجد محاضرات مسجلة لهذا اليوم.</p>';
+            loadTasks();
+        }
+
+        function openAddTaskModal() {
+            const taskName = prompt('أدخل عنوان المهمة الجديدة:');
+            if(taskName) {
+                let tasks = JSON.parse(localStorage.getItem('daily_tasks') || '[]');
+                tasks.push({ name: taskName, done: false });
+                localStorage.setItem('daily_tasks', JSON.stringify(tasks));
+                loadTasks();
+            }
+        }
+
+        function loadTasks() {
+            const tasks = JSON.parse(localStorage.getItem('daily_tasks') || '[]');
+            let container = document.getElementById('daily-tasks-container');
+            if(tasks.length === 0) {
+                container.innerHTML = '<p class="text-muted small mb-0">لا توجد مهام مضافة اليوم.</p>';
+                return;
+            }
+            let html = '';
+            tasks.forEach((t, index) => {
+                html += `<div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: rgba(0,0,0,0.02);">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${index})" id="task_${index}">
+                        <label class="form-check-label small ${t.done ? 'text-decoration-line-through opacity-50' : ''}" for="task_${index}">${t.name}</label>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="deleteTask(${index})" title="حذف المهمة"><i class="fa fa-trash"></i></button>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleTask(index) {
+            let tasks = JSON.parse(localStorage.getItem('daily_tasks') || '[]');
+            tasks[index].done = !tasks[index].done;
+            localStorage.setItem('daily_tasks', JSON.stringify(tasks));
+            loadTasks();
+        }
+
+        function deleteTask(index) {
+            let tasks = JSON.parse(localStorage.getItem('daily_tasks') || '[]');
+            tasks.splice(index, 1);
+            localStorage.setItem('daily_tasks', JSON.stringify(tasks));
+            loadTasks();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendAiMessage();
+            }
+        }
+
+        async function sendAiMessage() {
+            const input = document.getElementById('ai-user-input');
+            const msg = input.value.trim();
+            if(!msg) return;
+
+            const chat = document.getElementById('chat-messages');
+            chat.innerHTML += `<div class="chat-bubble user">${msg}</div>`;
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+
+            if(!navigator.onLine) {
+                chat.innerHTML += `<div class="chat-bubble ai text-danger">يبدو أنك غير متصل بالإنترنت.</div>`;
+                chat.scrollTop = chat.scrollHeight;
+                return;
+            }
+
+            const loadingId = 'loading-' + Date.now();
+            chat.innerHTML += `<div class="chat-bubble ai" id="${loadingId}">جاري التفكير...</div>`;
+            chat.scrollTop = chat.scrollHeight;
+
+            try {
+                // دمج توجيهات النظام (System Instructions) ومنع استخدام المارك داون
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${GEMINI_TOKEN}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        system_instruction: {
+                            parts: [{
+                                text: "انت مساعد آلي لمستخدمي تطبيق ذاكر والذي تم تطويره من قبل المهندس نصرالله دهمان. لا تستخدم تنسيق المارك داون في اجاباتك نهائياً (مثل النجوم أو الرموز الخاصة). اجب عن أي سؤال بطريقة أكاديمية ووفر أدق المعلومات وبأسلوب منظم وواضح باللغة العربية."
+                            }]
+                        },
+                        contents: [{ parts: [{ text: msg }] }]
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById(loadingId).remove();
+
+                if(data.candidates && data.candidates[0].content) {
+                    let reply = data.candidates[0].content.parts[0].text;
+                    // تنظيف إضافي لأي رموز مارك داون محتملة كاحتياط إضافي
+                    reply = reply.replace(/[*_#`]/g, '');
+                    chat.innerHTML += `<div class="chat-bubble ai">${reply}</div>`;
+                } else if(data.error) {
+                    chat.innerHTML += `<div class="chat-bubble ai text-danger">خطأ: ${data.error.message}</div>`;
+                } else {
+                    chat.innerHTML += `<div class="chat-bubble ai">عذراً، لم أتمكن من معالجة الرد.</div>`;
+                }
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                chat.innerHTML += `<div class="chat-bubble ai text-danger">حدث خطأ في الاتصال بالخادم.</div>`;
+            }
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.getElementById('darkModeSwitch').checked;
+            const theme = isDark ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        }
+
+        function saveNotificationTime() {
+            const time = document.getElementById('notification-time').value;
+            localStorage.setItem('notif_time', time);
+        }
+
+        window.onload = function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            if(savedTheme === 'dark') {
+                document.getElementById('darkModeSwitch').checked = true;
+            }
+
+            loadHomeData();
+            renderScheduleInterface();
+            const savedTime = localStorage.getItem('notif_time');
+            if(savedTime) document.getElementById('notification-time').value = savedTime;
+        };
+    </script>
+</body>
+</html>

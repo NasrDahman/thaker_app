@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Thaker</string>
+    <string name="title_activity_main">Thaker</string>
+    <string name="package_name">com.nasrdahman.thaker</string>
+    <string name="custom_url_scheme">com.nasrdahman.thaker</string>
+</resources>
