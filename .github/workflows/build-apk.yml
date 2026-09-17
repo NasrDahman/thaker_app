@@ -23,15 +23,10 @@ jobs:
       run: |
         sed -i 's/YOUR_API_KEY_HERE/${{ secrets.GEMINI_TOKEN }}/g' www/index.html
 
-    - name: Install Dependencies
+    - name: Install Dependencies & Sync Capacitor
       run: |
         npm install
-
-    - name: Add Android Platform & Sync
-      run: |
-        npm install @capacitor/android
-        npx cap add android
-        npx cap sync
+        npx cap sync android
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
